@@ -1,10 +1,13 @@
 from django.shortcuts import render
 from rest_framework.views import APIView
-from .models import Blog
+from .models import Blog, Book
 from .serializers import BlogSerializer
 from rest_framework . response import Response
 from rest_framework import status
 from django.shortcuts import get_object_or_404
+from rest_framework.permissions import IsAuthenticated  # for token
+from rest_framework.authentication import TokenAuthentication
+from .serializers import BookSerializer
 
 class BlogListAPIView(APIView):
     serializer_class = BlogSerializer
@@ -81,8 +84,77 @@ class BlogDetailApiView(APIView):
         blog.delete()
         return Response(status=status.HTTP_202_ACCEPTED)
 
+class BookListAPIView(APIView):
+    serializer_class = BookSerializer
 
+    def get(self , request, *args, **kwargs):
+        '''
+        Get Book List
+        '''
+        queryset = Book.objects.all()
+        if request.query_params:
+            books = Book.objects.filyer(**request.query_params.dict())
+        else:
+            books = Book.objects.all()
 
+        if books:
+            serializer = BookSerializer(books, many=True)
+            return Response(serializer.data)
+        else:
+            return Response(status=status.HTTP_404_NOT_FOUND)
 
+    def post(self, request, *args, **kargs):
+        '''
+        post bookview data
+        '''
+        books = BookSerializer(data=request.data)
+        if books.is_valid():
+            books.save()
+            return Response(books.data)
+        else:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+class BookDetailApiView(APIView):
+    serializer_class = BookSerializer
+
+    def get(self, request,pk=None):
+        '''get single post
+        '''
+        if pk:
+            try:
+                books= Book.objects.get(pk=pk)
+            except:
+                return response(status=status.HTTP_404_NOT_FOUND)
+
+            if books:
+                serializer = BookSerializer(books)
+                return Response(serializer.data)
+            else:
+                return Response(status=status.HTTP_404_NOT_FOUND)
+        else:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+    def put(self, request,pk=None):
+        print("111111111")
+        '''
+        Update Book data
+        '''
+        book = Book.objects.get(pk=pk)
+        data = BookSerializer(instance = book, data=request.data)
+        if data.is_valid():
+            data.save()
+            print("22222222")
+            return Response(data.data)
+        else:
+            print("33333333")
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+    def delete(self, request,pk=None):
+        '''
+        delete Book detail
+        '''
+        book = get_object_or_404(Book, pk=pk)
+        book.delete()
+        return Response(status=status.HTTP_202_ACCEPTED)
 
 
